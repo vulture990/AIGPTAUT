@@ -20,7 +20,7 @@ driver = uc.Chrome(options=options, version_main=127)
 try:
     driver.get("https://chat.openai.com/")
     print("Navigated to the login page.")
-    
+
     time.sleep(random.uniform(2, 3))
 
     login_button = WebDriverWait(driver, 20).until(
@@ -72,15 +72,21 @@ try:
 
     outputs = []
 
-    for row in rows:
+    for index, row in enumerate(rows):
         prompt = row['PROMPT']
+
+        # Refresh the page to start a new chat
+        driver.get("https://chat.openai.com/")
+        print(f"Navigated to chat page for row {index + 1}.")
+
+        time.sleep(5)  # Wait for the page to load
 
         # Find the textarea and enter the prompt
         textarea = WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "textarea#prompt-textarea"))
         )
         textarea.send_keys(prompt)
-        print(f"Entered prompt: {prompt}")
+        print(f"Entered prompt from row {index + 1}: {prompt}")
 
         # Click the send button
         send_button = WebDriverWait(driver, 20).until(
@@ -89,28 +95,18 @@ try:
         send_button.click()
         print("Sent the prompt.")
 
-        time.sleep(25)  # Increased wait time for response
+        # Wait for the response
+        time.sleep(20)  # Adjust as necessary for response time
 
-        responses = []
-        for i in range(4):  # Initial response + 3 regenerations
-            # Locate the response container dynamically
-            response_div = WebDriverWait(driver, 60).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-message-author-role='assistant']"))
-            )
-            response = response_div.text
-            print(f"Captured response {i + 1}: {response}")
-            responses.append(response)
+        # Capture the response
+        response_div = WebDriverWait(driver, 60).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-message-author-role='assistant']"))
+        )
+        response = response_div.text
+        print(f"Captured response for row {index + 1}: {response}")
 
-            if i < 3:  # Don't regenerate after the last response
-                regenerate_button = WebDriverWait(driver, 40).until(
-                    EC.element_to_be_clickable((By.XPATH, "//button[@aria-label='Regenerate']"))
-                )
-                regenerate_button.click()
-                print(f"Regenerated response {i + 1}")
-                time.sleep(15)  # Increased wait time before capturing the next response
-
-        # Save all responses in the 'output' list, separated by new lines
-        outputs.append({"prompt": prompt, "output": "\n\n".join(responses)})
+        # Save the response
+        outputs.append({"prompt": prompt, "output": response})
 
     # Write the new CSV with prompts and outputs
     with open('new_AUTO.csv', 'w', newline='', encoding='utf-8') as csvfile:
@@ -119,11 +115,11 @@ try:
         writer.writeheader()
         writer.writerows(outputs)
 
-    print("Completed processing the CSV file and saved the results in new_AUTO.csv.")
+    print("Completed processing and saved the results in new_AUTO.csv.")
 
-    # Wait for 300 seconds before quitting
-    print("Waiting for 300 seconds before quitting...")
-    time.sleep(300)
+    # Wait for 20 seconds before quitting
+    print("Waiting for 20 seconds before quitting...")
+    time.sleep(20)
 
 except Exception as e:
     print(f"An error occurred during login or CSV processing: {e}")
