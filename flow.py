@@ -98,15 +98,43 @@ try:
         # Wait for the response
         time.sleep(20)  # Adjust as necessary for response time
 
-        # Capture the response
+        # Capture the initial response
         response_div = WebDriverWait(driver, 60).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-message-author-role='assistant']"))
         )
         response = response_div.text
         print(f"Captured response for row {index + 1}: {response}")
 
-        # Save the response
-        outputs.append({"prompt": prompt, "output": response})
+        # Store the initial response
+        output = {"prompt": prompt, "output": response}
+
+        # Click the regenerate button multiple times
+        for i in range(3):  # Adjust the number of regenerations as needed
+            try:
+                regenerate_button = WebDriverWait(driver, 20).until(
+                    EC.element_to_be_clickable((By.XPATH, "//button[@aria-label='Regenerate']"))
+                )
+                regenerate_button.click()
+                print(f"Clicked on 'Regenerate' button {i + 1}.")
+
+                time.sleep(15)  # Wait for the response to generate
+
+                # Capture the regenerated response
+                response_div = WebDriverWait(driver, 60).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-message-author-role='assistant']"))
+                )
+                regenerated_response = response_div.text
+                print(f"Captured regenerated response {i + 1} for row {index + 1}: {regenerated_response}")
+                
+                # Append the regenerated response to the output
+                output["output"] += f"\n\nRegenerated Response {i + 1}: {regenerated_response}"
+
+            except Exception as e:
+                print(f"Error during regeneration attempt {i + 1}: {e}")
+                break  # Break if regeneration fails
+
+        # Append all outputs for this row
+        outputs.append(output)
 
     # Write the new CSV with prompts and outputs
     with open('new_AUTO.csv', 'w', newline='', encoding='utf-8') as csvfile:
