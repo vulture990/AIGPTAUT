@@ -18,25 +18,29 @@ options.add_argument("--disable-blink-features=AutomationControlled")
 driver = uc.Chrome(options=options, version_main=127)
 
 try:
+    # Open the login page
     driver.get("https://chat.openai.com/")
     print("Navigated to the login page.")
-
+    
     time.sleep(random.uniform(2, 3))
 
+    # Click the login button
     login_button = WebDriverWait(driver, 20).until(
         EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-testid='login-button']"))
     )
     login_button.click()
     print("Clicked on the login button.")
-
+    
     time.sleep(random.uniform(2, 3))
 
+    # Enter email
     email_input = WebDriverWait(driver, 20).until(
         EC.presence_of_element_located((By.CSS_SELECTOR, "input#email-input"))
     )
     email_input.send_keys("test@wordpath.com")
     print("Entered email address.")
-
+    
+    # Click the continue button after entering the email
     continue_button = WebDriverWait(driver, 20).until(
         EC.element_to_be_clickable((By.XPATH, "//button[contains(text(),'Continue')]"))
     )
@@ -45,27 +49,35 @@ try:
 
     time.sleep(random.uniform(2, 3))
 
+    # Find the password input field and enter password
     password_input = WebDriverWait(driver, 20).until(
-        EC.presence_of_element_located((By.CSS_SELECTOR, "input[type='password']"))
+        EC.presence_of_element_located((By.CSS_SELECTOR, "input#password"))
     )
     password_input.send_keys("i2fskL%tgV5m")
     print("Entered password.")
-
-    next_button = WebDriverWait(driver, 5).until(
-        EC.element_to_be_clickable((By.XPATH, "//button[contains(text(),'Continue')]"))
+    
+    # Check if the "Continue" button is clickable and enabled
+    next_button = WebDriverWait(driver, 20).until(
+        EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' and contains(text(),'Continue')]"))
     )
+    
+    # Ensure button is enabled
+    WebDriverWait(driver, 20).until(
+        EC.element_to_be_clickable((By.XPATH, "//button[@type='submit' and not(@disabled)]"))
+    )
+    
+    # Click the "Continue" button
     next_button.click()
     print("Clicked on the Continue button after entering the password.")
-
-    # Wait for the CAPTCHA to be solved manually
+    # Wait for the CAPTCHA (if present) to be solved manually
     print("Please solve the CAPTCHA manually.")
     input("Press Enter after you've solved the CAPTCHA and been redirected...")
-
+    
     # Switch back to the default content
     driver.switch_to.default_content()
     print("CAPTCHA solved and user redirected. Continuing execution...")
 
-    # Process the CSV
+    # Process the CSV file
     with open('AUTO.csv', newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         rows = list(reader)
@@ -78,36 +90,36 @@ try:
         # Refresh the page to start a new chat
         driver.get("https://chat.openai.com/")
         print(f"Navigated to chat page for row {index + 1}.")
-
+        
         time.sleep(5)  # Wait for the page to load
-
+        
         # Find the textarea and enter the prompt
         textarea = WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "textarea#prompt-textarea"))
         )
         textarea.send_keys(prompt)
         print(f"Entered prompt from row {index + 1}: {prompt}")
-
+        
         # Click the send button
         send_button = WebDriverWait(driver, 20).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, "button[aria-label='Send prompt']"))
         )
         send_button.click()
         print("Sent the prompt.")
-
+        
         # Wait for the response
         time.sleep(20)  # Adjust as necessary for response time
-
+        
         # Capture the initial response
         response_div = WebDriverWait(driver, 60).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-message-author-role='assistant']"))
         )
         response = response_div.text
         print(f"Captured response for row {index + 1}: {response}")
-
+        
         # Store the initial response
         output = {"prompt": prompt, "output": response}
-
+        
         # Click the regenerate button multiple times
         for i in range(3):  # Adjust the number of regenerations as needed
             try:
@@ -116,9 +128,9 @@ try:
                 )
                 regenerate_button.click()
                 print(f"Clicked on 'Regenerate' button {i + 1}.")
-
+                
                 time.sleep(15)  # Wait for the response to generate
-
+                
                 # Capture the regenerated response
                 response_div = WebDriverWait(driver, 60).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-message-author-role='assistant']"))
@@ -128,11 +140,11 @@ try:
                 
                 # Append the regenerated response to the output
                 output["output"] += f"\n\nRegenerated Response {i + 1}: {regenerated_response}"
-
+            
             except Exception as e:
                 print(f"Error during regeneration attempt {i + 1}: {e}")
                 break  # Break if regeneration fails
-
+        
         # Append all outputs for this row
         outputs.append(output)
 
@@ -150,7 +162,10 @@ try:
     time.sleep(20)
 
 except Exception as e:
-    print(f"An error occurred during login or CSV processing: {e}")
+    # Print more detailed error messages
+    print(f"An error occurred: {e}")
+    print("Current page source for debugging:")
+    print(driver.page_source)  # Add this to print the current page source
 
 finally:
     driver.quit()
