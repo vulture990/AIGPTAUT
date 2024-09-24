@@ -11,7 +11,7 @@ def process_row(driver, index, prompt):
     for attempt in range(3):  # Retry up to 3 times
         try:
             # Step 1: Refresh the page to start a new chat
-            driver.get("https://chat.openai.com/")
+            driver.get("https://chatgpt.com/?model=gpt-4")
             print(f"Attempt {attempt + 1}: Navigated to chat page for row {index + 1}.")
             time.sleep(5)  # Wait for the page to load
 
@@ -59,7 +59,7 @@ driver = uc.Chrome(options=options, version_main=127)
 
 try:
     # Open the login page
-    driver.get("https://chat.openai.com/")
+    driver.get("https://chatgpt.com/?model=gpt-4")
     print("Navigated to the login page.")
     
     time.sleep(random.uniform(2, 3))
