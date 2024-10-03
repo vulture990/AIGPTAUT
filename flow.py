@@ -32,6 +32,14 @@ def handle_cloudflare(driver):
     except TimeoutException:
         print("No Cloudflare challenge detected.")
 
+# Function to detect rate limit message in responses
+def check_rate_limit(response_text):
+    if "You've reached our limit of messages per 24 hours" in response_text:
+        print("Rate limit reached. Pausing execution for 1 hour.")
+        time.sleep(3600)  # Pause for 1 hour
+        return True
+    return False
+
 # Function to perform login
 def login(driver):
     retries = 3
@@ -74,15 +82,6 @@ def login(driver):
             next_button.click()
             print("Clicked on the Continue button after entering the password.")
 
-            # # Automatically wait for CAPTCHA to be solved and for the page to redirect
-            # print("Waiting for CAPTCHA to be solved...")
-
-            # # Wait until the page is redirected or a post-CAPTCHA element is detected
-            # WebDriverWait(driver, 300).until(
-            #     EC.presence_of_element_located((By.CSS_SELECTOR, "div[data-testid='some-post-captcha-element']"))
-            # )
-            # print("CAPTCHA solved and user redirected. Continuing execution...")
-
             return True  # Login successful
 
         except Exception as e:
@@ -124,13 +123,17 @@ def process_row(driver, index, prompt):
             response = response_div.text
             print(f"Captured response for row {index + 1}: {response}")
 
+            # Check if rate limit has been reached
+            if check_rate_limit(response):
+                return None  # Pause script for 1 hour
+
             return response  # Return the response if successful
 
         except Exception as e:
             print(f"Error on attempt {attempt + 1} for row {index + 1}: {e}")
             if attempt == 2:  # If it fails after 3 tries
                 print(f"Failed to process row {index + 1} after 3 attempts.")
-                return None  # Return None if all attempts fail
+                return None
 
 # Initialize the ChromeDriver with options
 options = uc.ChromeOptions()
@@ -193,3 +196,4 @@ except Exception as e:
 
 finally:
     driver.quit()
+
